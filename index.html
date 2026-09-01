@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="随机抽签" />
+  <title>1-7 不放回随机抽签</title>
+
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+        "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding:
+        calc(20px + env(safe-area-inset-top))
+        18px
+        calc(20px + env(safe-area-inset-bottom));
+    }
+
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 28px;
+      padding: 32px 24px 26px;
+      text-align: center;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      color: #737373;
+      margin-bottom: 26px;
+      font-size: 15px;
+    }
+
+    .number-box {
+      width: 156px;
+      height: 156px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 76px;
+      font-weight: 800;
+      box-shadow: 0 12px 28px rgba(102, 126, 234, 0.35);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .rolling {
+      animation: shake 0.12s infinite alternate;
+    }
+
+    @keyframes shake {
+      from { transform: scale(0.96) rotate(-3deg); }
+      to   { transform: scale(1.04) rotate(3deg); }
+    }
+
+    .status {
+      margin-bottom: 18px;
+      font-size: 16px;
+      color: #4f4f4f;
+      min-height: 24px;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 16px 18px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+      touch-action: manipulation;
+    }
+
+    button:active { transform: scale(0.985); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #drawBtn {
+      color: #fff;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    #hideBtn {
+      color: #fff;
+      background: #323232;
+      display: none;
+    }
+
+    #resetBtn {
+      color: #666;
+      background: #eeeeee;
+    }
+
+    .tip {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #9a9a9a;
+      line-height: 1.7;
+    }
+
+    .counter {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f3f3f7;
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>🎲 随机抽签</h1>
+    <div class="subtitle">1～7 不放回抽签</div>
+
+    <div id="number" class="number-box">?</div>
+
+    <div id="status" class="status">尚未开始抽签</div>
+    <div id="counter" class="counter">已完成 0 / 7</div>
+
+    <button id="drawBtn" onclick="drawNumber()">开始抽签</button>
+    <button id="hideBtn" onclick="hideResult()">我已记住，交给下一位</button>
+    <button id="resetBtn" onclick="resetDraw()">重新开始</button>
+
+    <div class="tip">
+      每个数字只会出现一次<br>
+      不显示剩余号码，也不显示历史结果
+    </div>
+  </div>
+
+  <script>
+    let remainingNumbers = [1, 2, 3, 4, 5, 6, 7];
+    let drawCount = 0;
+    let drawing = false;
+
+    function vibrate(pattern) {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    }
+
+    function drawNumber() {
+      if (drawing || remainingNumbers.length === 0) return;
+
+      drawing = true;
+
+      const numberBox = document.getElementById("number");
+      const drawBtn = document.getElementById("drawBtn");
+      const hideBtn = document.getElementById("hideBtn");
+      const status = document.getElementById("status");
+
+      drawBtn.disabled = true;
+      hideBtn.style.display = "none";
+      drawBtn.innerText = "抽签中...";
+      status.innerText = "正在随机抽取";
+      numberBox.classList.add("rolling");
+
+      let count = 0;
+
+      const animation = setInterval(() => {
+        const tempIndex = Math.floor(Math.random() * remainingNumbers.length);
+        numberBox.innerText = remainingNumbers[tempIndex];
+        count++;
+
+        if (count >= 18) {
+          clearInterval(animation);
+
+          const randomIndex = Math.floor(Math.random() * remainingNumbers.length);
+          const result = remainingNumbers.splice(randomIndex, 1)[0];
+
+          drawCount++;
+          numberBox.innerText = result;
+          numberBox.classList.remove("rolling");
+          status.innerText = `第 ${drawCount} 位抽签结果`;
+          document.getElementById("counter").innerText = `已完成 ${drawCount} / 7`;
+
+          drawBtn.style.display = "none";
+          hideBtn.style.display = "block";
+          vibrate([80, 40, 120]);
+
+          drawing = false;
+        }
+      }, 80);
+    }
+
+    function hideResult() {
+      const numberBox = document.getElementById("number");
+      const drawBtn = document.getElementById("drawBtn");
+      const hideBtn = document.getElementById("hideBtn");
+      const status = document.getElementById("status");
+
+      numberBox.innerText = "?";
+      hideBtn.style.display = "none";
+
+      if (remainingNumbers.length > 0) {
+        status.innerText = `请交给下一位`;
+        drawBtn.style.display = "block";
+        drawBtn.disabled = false;
+        drawBtn.innerText = "下一位开始抽签";
+      } else {
+        status.innerText = "🎉 7 位已全部完成抽签";
+        drawBtn.style.display = "block";
+        drawBtn.disabled = true;
+        drawBtn.innerText = "抽签结束";
+      }
+    }
+
+    function resetDraw() {
+      const ok = confirm("确定要重新开始吗？当前抽签进度会被清空。");
+      if (!ok) return;
+
+      remainingNumbers = [1, 2, 3, 4, 5, 6, 7];
+      drawCount = 0;
+      drawing = false;
+
+      const numberBox = document.getElementById("number");
+      const drawBtn = document.getElementById("drawBtn");
+      const hideBtn = document.getElementById("hideBtn");
+      const status = document.getElementById("status");
+
+      numberBox.innerText = "?";
+      numberBox.classList.remove("rolling");
+      status.innerText = "尚未开始抽签";
+      document.getElementById("counter").innerText = "已完成 0 / 7";
+
+      hideBtn.style.display = "none";
+      drawBtn.style.display = "block";
+      drawBtn.disabled = false;
+      drawBtn.innerText = "开始抽签";
+    }
+  </script>
+</body>
+</html>
